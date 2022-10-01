@@ -1,0 +1,114 @@
+import java.io.IOException;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class Assignment2 {
+    public final static HashMap<String, String> userInfoMap = new HashMap<String, String>();
+
+    public static class TransMapper extends Mapper <Object, Text, Text, Text>
+        {
+            public void map(Object key, Text value, Context context)
+                throws IOException, InterruptedException
+            {
+                String record = value.toString();
+                String[] parts = record.split(",");
+                String id = parts[2];
+                String gameType = parts[4];
+                context.write(new Text(gameType), new Text("tnxn" + "    " + id + "    " + gameType));
+            }
+        }
+
+    public static class CustsMapper extends Mapper <Object, Text, Text, Text>
+    {
+        public void map(Object key, Text value, Context context)
+            throws IOException, InterruptedException
+        {
+            String record = value.toString();
+            String[] parts = record.split(",");
+            String id = parts[0];
+            String name = parts[1];
+            String age = parts[3];
+
+            userInfoMap.put(id, name + "_" + age);
+
+            context.write(new Text(id), new Text("cust" + "    " + id + "    " + name + "_" + age));
+        }
+    }
+
+    public static class ReduceJoinReducer extends Reducer <Text, Text, Text, Text>
+    {
+        private static HashMap<String, String> userMap = new HashMap<String, String>();
+
+        public void reduce(Text key, Iterable<Text> values, Context context)
+            throws IOException, InterruptedException
+        {
+            //List<String> custList = new ArrayList<String>();
+
+            String game = "";
+            int times = 0;
+            String users = "";
+            HashMap<String, Boolean> passedUsers = new HashMap<String, Boolean>();
+
+            for (Text text : values)
+            {
+                String parts[] = text.toString().split("    ");
+
+                if (parts[0].equals("cust")) {
+                    // users += parts[2];
+                    userMap.put(parts[1], parts[2]);
+                }
+
+                if (parts[0].equals("tnxn"))
+                {
+                    String id = parts[1];
+                    String gameType = parts[2];
+
+                    game = gameType;
+                    times++;
+                    if (!passedUsers.containsKey(id)) {
+                        users += userMap.get(id) + ", ";
+                        passedUsers.put(id, true);
+                    }
+                }
+            }
+
+            if (times != 0) {
+                context.write(new Text(game), new Text(times + "[" + users + "]"));                   
+            }
+        }
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        Configuration conf = new Configuration();
+        Job job = new Job(conf, "Reduce-side join");
+        job.setJarByClass(Assignment2.class);
+        job.setReducerClass(ReduceJoinReducer.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(Text.class);
+
+        MultipleInputs.addInputPath(job, new Path(args[0]),TextInputFormat.class, TransMapper.class);
+        MultipleInputs.addInputPath(job, new Path(args[1]),TextInputFormat.class, CustsMapper.class);
+        Path outputPath = new Path(args[2]);
+
+        FileOutputFormat.setOutputPath(job, outputPath);
+        outputPath.getFileSystem(conf).delete(outputPath);
+        System.exit(job.waitForCompletion(true) ? 0 : 1);
+    }
+}
+
