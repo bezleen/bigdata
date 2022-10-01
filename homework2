@@ -88,7 +88,7 @@ public class Assignment2 {
             }
 
             if (times != 0) {
-                context.write(new Text(game), new Text(times + "[" + users + "]"));                   
+                context.write(new Text(game), new Text(times + "times [" + users + "]"));                   
             }
         }
     }
