@@ -17,7 +17,7 @@ import java.util.Random;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Assignment2 {
+public class HomeWork2 {
     public final static HashMap<String, String> userInfoMap = new HashMap<String, String>();
 
     public static class TransMapper extends Mapper <Object, Text, Text, Text>
@@ -97,7 +97,7 @@ public class Assignment2 {
     {
         Configuration conf = new Configuration();
         Job job = new Job(conf, "Reduce-side join");
-        job.setJarByClass(Assignment2.class);
+        job.setJarByClass(HomeWork2.class);
         job.setReducerClass(ReduceJoinReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
