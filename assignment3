@@ -11,6 +11,8 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
  
 public class Assignment3 {
     public static class CustsMapper extends Mapper <Object, Text, Text, Text>
@@ -62,7 +64,6 @@ public class Assignment3 {
                     }
                 }
             }
-            String str = String.format("%d %f", count, total);
             context.write(new Text(key_reduce), new Text(value_reduce));
         }
     }
@@ -76,10 +77,10 @@ public class Assignment3 {
 
             // value 
             String record = value.toString().trim();
-            String[] parts = value_record.split("\t");
+            String[] parts = record.split("\t");
             
             String age = parts[0];
-            String[] gameTypes = value_record.split(",");
+            String[] gameTypes = parts[1].split(",");
             for (String gameType: gameTypes)
             {
                 context.write(new Text(gameType), new Text(age));
@@ -94,19 +95,18 @@ public class Assignment3 {
         public void reduce(Text key, Iterable<Text> values, Context context)
         throws IOException, InterruptedException 
         {
-            String result = "";
-            boolean first_loop = true;
 
 
-            int min =0;
-            int max = 0;
+            double min =0;
+            double max = 0;
             double sum=0;
             int len=0;
             boolean first_loop = true;
+            double age_value = 0;
             for (Text t : values) 
             { 
                 age_value =Float.parseFloat(t.toString().trim());
-                sum += age_value
+                sum += age_value;
                 len += 1;
                 if (first_loop == true)
                 {
@@ -127,7 +127,7 @@ public class Assignment3 {
                 }   
             }
             double avg = sum/len;
-            context.write(key, new Text("Min: " + Integer.toString(min) + " Max: "+Integer.toString(max) + " Avg: "+Double.toString(avg))));
+            context.write(key, new Text("Min: " + Double.toString(min) + " Max: "+Double.toString(max) + " Avg: "+Double.toString(avg)));
         }
     }
     
